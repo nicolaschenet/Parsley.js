@@ -16,7 +16,7 @@ define('parsley/validator', [
       this.catalog = catalog;
 
       for (var name in validators)
-        this.addValidator(name, validators[name].fn, validators[name].priority);
+        this.addValidator(name, validators[name].fn, validators[name].priority, validators[name].requirementsTransformer);
 
       $.emit('parsley:validator:init');
     },
@@ -57,16 +57,16 @@ define('parsley/validator', [
     },
 
     // Add a new validator
-    addValidator: function (name, fn, priority) {
-      this.validators[name.toLowerCase()] = function (requirements) {
-        return $.extend(new Validator.Assert().Callback(fn, requirements), { priority: priority });
+    addValidator: function (name, fn, priority, requirementsTransformer) {
+      this.validators[name] = function (requirements) {
+        return $.extend(new Validator.Assert().Callback(fn, requirements), { priority: priority, requirementsTransformer: requirementsTransformer });
       };
 
       return this;
     },
 
-    updateValidator: function (name, fn, priority) {
-      return addValidator(name, fn, priority);
+    updateValidator: function (name, fn, priority, requirementsTransformer) {
+      return this.addValidator(name, fn, priority, requirementsTransformer);
     },
 
     removeValidator: function (name) {
@@ -183,7 +183,7 @@ define('parsley/validator', [
       min: function (value) {
         return $.extend(new Validator.Assert().GreaterThanOrEqual(value), {
           priority: 30,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return 'string' === typeof value && !isNaN(value) ? parseInt(value, 10) : value;
           }
         });
@@ -191,7 +191,7 @@ define('parsley/validator', [
       max: function (value) {
         return $.extend(new Validator.Assert().LessThanOrEqual(value), {
           priority: 30,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return 'string' === typeof value && !isNaN(value) ? parseInt(value, 10) : value;
           }
         });
@@ -199,7 +199,7 @@ define('parsley/validator', [
       range: function (array) {
         return $.extend(new Validator.Assert().Range(array[0], array[1]), {
           priority: 32,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (array) {
             for (var i = 0; i < array.length; i++)
               array[i] = 'string' === typeof array[i] && !isNaN(array[i]) ? parseInt(array[i], 10) : array[i];
 
@@ -210,7 +210,7 @@ define('parsley/validator', [
       equalto: function (value) {
         return $.extend(new Validator.Assert().EqualTo(value), {
           priority: 256,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return $(value).length ? $(value).val() : value;
           }
         });

@@ -1,7 +1,7 @@
 /*!
 * Parsleyjs
 * Guillaume Potier - <guillaume@wisembly.com>
-* Version 2.0.0 - built Wed May 14 2014 09:53:53
+* Version 2.0.0 - built Mon Jun 16 2014 17:19:55
 * MIT Licensed
 *
 */
@@ -93,7 +93,7 @@
     },
     // http://support.microsoft.com/kb/167820
     // http://stackoverflow.com/questions/19999388/jquery-check-if-user-is-using-ie
-    msieversion: function  () {
+    msieversion: function () {
       var
         ua = window.navigator.userAgent,
         msie = ua.indexOf('MSIE ');
@@ -948,7 +948,7 @@
     init: function (validators, catalog) {
       this.catalog = catalog;
       for (var name in validators)
-        this.addValidator(name, validators[name].fn, validators[name].priority);
+        this.addValidator(name, validators[name].fn, validators[name].priority, validators[name].requirementsTransformer);
       $.emit('parsley:validator:init');
     },
     // Set new messages locale if we have dictionary loaded in ParsleyConfig.i18n
@@ -977,14 +977,14 @@
       return new this.Validator.Validator().validate.apply(new Validator.Validator(), arguments);
     },
     // Add a new validator
-    addValidator: function (name, fn, priority) {
-      this.validators[name.toLowerCase()] = function (requirements) {
-        return $.extend(new Validator.Assert().Callback(fn, requirements), { priority: priority });
+    addValidator: function (name, fn, priority, requirementsTransformer) {
+      this.validators[name] = function (requirements) {
+        return $.extend(new Validator.Assert().Callback(fn, requirements), { priority: priority, requirementsTransformer: requirementsTransformer });
       };
       return this;
     },
-    updateValidator: function (name, fn, priority) {
-      return addValidator(name, fn, priority);
+    updateValidator: function (name, fn, priority, requirementsTransformer) {
+      return this.addValidator(name, fn, priority, requirementsTransformer);
     },
     removeValidator: function (name) {
       delete this.validators[name];
@@ -1088,7 +1088,7 @@
       min: function (value) {
         return $.extend(new Validator.Assert().GreaterThanOrEqual(value), {
           priority: 30,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return 'string' === typeof value && !isNaN(value) ? parseInt(value, 10) : value;
           }
         });
@@ -1096,7 +1096,7 @@
       max: function (value) {
         return $.extend(new Validator.Assert().LessThanOrEqual(value), {
           priority: 30,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return 'string' === typeof value && !isNaN(value) ? parseInt(value, 10) : value;
           }
         });
@@ -1104,7 +1104,7 @@
       range: function (array) {
         return $.extend(new Validator.Assert().Range(array[0], array[1]), {
           priority: 32,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (array) {
             for (var i = 0; i < array.length; i++)
               array[i] = 'string' === typeof array[i] && !isNaN(array[i]) ? parseInt(array[i], 10) : array[i];
             return array;
@@ -1114,7 +1114,7 @@
       equalto: function (value) {
         return $.extend(new Validator.Assert().EqualTo(value), {
           priority: 256,
-          requirementsTransformer: function () {
+          requirementsTransformer: function (value) {
             return $(value).length ? $(value).val() : value;
           }
         });
@@ -1559,7 +1559,7 @@
     priority = priority || getPriority(parsleyField, name);
     // If validator have a requirementsTransformer, execute it
     if ('function' === typeof window.ParsleyValidator.validators[name](requirements).requirementsTransformer)
-      requirements = window.ParsleyValidator.validators[name](requirements).requirementsTransformer();
+      requirements = window.ParsleyValidator.validators[name](requirements).requirementsTransformer(requirements);
     return $.extend(window.ParsleyValidator.validators[name](requirements), {
       name: name,
       requirements: requirements,

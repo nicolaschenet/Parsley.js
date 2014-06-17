@@ -1,5 +1,5 @@
 define('features/extra', [
-  'extra/validator/dateiso'
+  'extra/validator/date'
 ], function () {
 
   return function (ParsleyValidator) {
@@ -14,6 +14,56 @@ define('features/extra', [
         expect(parsleyValidator.validate('1986-12-45', parsleyValidator.validators.dateiso())).not.to.be(true);
         expect(parsleyValidator.validate('1986-12-01', parsleyValidator.validators.dateiso())).to.be(true);
       });
+      it('should have date validator', function () {
+        expect(window.ParsleyConfig.validators).to.have.key('date');
+        var parsleyValidator = new ParsleyValidator(window.ParsleyConfig.validators);
+
+        expect(parsleyValidator.validate('', parsleyValidator.validators.date())).not.to.be(true);
+        expect(parsleyValidator.validate('foo', parsleyValidator.validators.date())).not.to.be(true);
+        expect(parsleyValidator.validate('2014-06-16', parsleyValidator.validators.date())).to.be(true);
+        expect(parsleyValidator.validate('2014-06-16T17:00', parsleyValidator.validators.date())).to.be(true);
+      });
+      it('should have a datebefore validator', function () {
+        expect(window.ParsleyConfig.validators).to.have.key('datebefore');
+        var parsleyValidator = new ParsleyValidator(window.ParsleyConfig.validators);
+
+        // expect(parsleyValidator.validate('', parsleyValidator.validators.datebefore('foo'))).to.be(true);
+
+        $('body').append('<input type="text" id="element" data-parsley-datebefore="#before-one,#before-two" value="2014-08-16T17:00" />');
+        $('body').append('<input type="text" id="before-one" value="2014-05-16T17:00" />');
+        $('body').append('<input type="text" id="before-two" value="2014-07-16T17:00" />');
+
+        expect($('#element').psly().isValid()).to.be(false);
+        $('#element').val('2014-06-16T17:00');
+        expect($('#element').psly().isValid()).to.be(false);
+        $('#element').val('2014-04-16T17:00');
+        expect($('#element').psly().isValid()).to.be(true);
+
+        $('#element').remove();
+        $('#before-one').remove();
+        $('#before-two').remove();
+      });
+      it('should have a dateafter validator', function () {
+        expect(window.ParsleyConfig.validators).to.have.key('dateafter');
+        var parsleyValidator = new ParsleyValidator(window.ParsleyConfig.validators);
+
+        // expect(parsleyValidator.validate('', parsleyValidator.validators.dateafter('foo'))).to.be(true);
+
+        $('body').append('<input type="text" id="element" data-parsley-dateafter="#after-one,#after-two" value="2014-06-16T17:00" />');
+        $('body').append('<input type="text" id="after-one" value="2014-05-16T17:00" />');
+        $('body').append('<input type="text" id="after-two" value="2014-07-16T17:00" />');
+
+        expect($('#element').psly().isValid()).to.be(false);
+        $('#element').val('2014-06-16T17:00');
+        expect($('#element').psly().isValid()).to.be(false);
+        $('#element').val('2015-08-16T17:00');
+        expect($('#element').psly().isValid()).to.be(true);
+
+        $('#element').remove();
+        $('#after-one').remove();
+        $('#after-two').remove();
+      });
+
       it('should have a bind.js plugin allowing to give pure json validation config to parsley constructor', function (done) {
         require(['extra/plugin/bind'], function () {
           $('body').append(
